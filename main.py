@@ -13,15 +13,17 @@ CUDA = True if torch.cuda.is_available() else False
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 5e-4
 MOMENTUM = 0.9
-BATCH_SIZE = [200, 56]
+BATCH_SIZE = [100, 28]
 EPOCHS = 20
 
 
-source_loader = get_office31_dataloader(case='amazon', batch_size=BATCH_SIZE[0])
-target_loader = get_office31_dataloader(case='webcam', batch_size=BATCH_SIZE[1])
+SOURCE_LOADER = get_office31_dataloader(case='amazon', batch_size=BATCH_SIZE[0])
+TARGET_LOADER = get_office31_dataloader(case='webcam', batch_size=BATCH_SIZE[1])
+noise_dataset = utils.NoiseDataset(size=[795, 3, 227, 227], num_class=5)
+NOISE_LOADER = torch.utils.data.DataLoader(noise_dataset, batch_size=BATCH_SIZE[1], shuffle=True)
 
 
-def train(model, optimizer, epoch, _lambda):
+def train(model, optimizer, epoch, _lambda, source_loader, target_loader):
     result = []
 
     # Expected size : xs -> (batch_size, 3, 300, 300), ys -> (batch_size)
@@ -55,9 +57,9 @@ def train(model, optimizer, epoch, _lambda):
             'step': batch_idx + 1,
             'total_steps': train_steps,
             'lambda': _lambda,
-            'coral_loss': coral_loss.data[0],
-            'classification_loss': classification_loss.data[0],
-            'total_loss': sum_loss.data[0]
+            'coral_loss': coral_loss.item(),
+            'classification_loss': classification_loss.item(),
+            'total_loss': sum_loss.item()
         })
 
         print('Train Epoch: {:2d} [{:2d}/{:2d}]\t'
@@ -66,9 +68,9 @@ def train(model, optimizer, epoch, _lambda):
                   batch_idx + 1,
                   train_steps,
                   _lambda,
-                  classification_loss.data[0],
-                  coral_loss.data[0],
-                  sum_loss.data[0]
+                  classification_loss.item(),
+                  coral_loss.item(),
+                  sum_loss.item()
               ))
 
     return result
@@ -86,7 +88,7 @@ def test(model, dataset_loader, e):
         out, _ = model(data, data)
 
         # sum up batch loss
-        test_loss += torch.nn.functional.cross_entropy(out, target, size_average=False).data[0]
+        test_loss += torch.nn.functional.cross_entropy(out, target, size_average=False).item()
 
         # get the index of the max log-probability
         pred = out.data.max(1, keepdim=True)[1]
@@ -145,9 +147,10 @@ if __name__ == '__main__':
     testing_t_statistic = []
 
     for e in range(0, EPOCHS):
-        _lambda = (e+1)/EPOCHS
+        _lambda = (e+1)/EPOCHS  # 原代码
+        # _lambda = 0  # 测试不跨域
         # _lambda = 0.0
-        res = train(model, optimizer, e+1, _lambda)
+        res = train(model, optimizer, e+1, _lambda, SOURCE_LOADER, NOISE_LOADER)
         print('###EPOCH {}: Class: {:.6f}, CORAL: {:.6f}, Total_Loss: {:.6f}'.format(
             e+1,
             sum(row['classification_loss'] / row['total_steps'] for row in res),
@@ -157,8 +160,8 @@ if __name__ == '__main__':
 
         training_statistic.append(res)
 
-        test_source = test(model, source_loader, e)
-        test_target = test(model, target_loader, e)
+        test_source = test(model, SOURCE_LOADER, e)
+        test_target = test(model, TARGET_LOADER, e)
         testing_s_statistic.append(test_source)
         testing_t_statistic.append(test_target)
 

@@ -58,9 +58,9 @@ def get_train_test_loader(directory, batch_size, testing_size=0.1, img_size=None
 def get_office31_dataloader(case, batch_size):
     print('[INFO] Loading datasets: {}'.format(case))
     datas = {
-        'amazon': 'dataset/office31/amazon/images/',
-        'dslr': 'dataset/office31/dslr/images/',
-        'webcam': 'dataset/office31/webcam/images/'
+        'amazon': r'D:\work\2021\7\DeepCORAL\dataset\office31\amazon\images',
+        'dslr': r'D:\work\2021\7\DeepCORAL\dataset\office31\dslr\images',
+        'webcam': r'D:\work\2021\7\DeepCORAL\dataset\office31\webcam\images'
     }
     means = {
         'amazon': [0.79235075407833078, 0.78620633471295642, 0.78417965306916637],

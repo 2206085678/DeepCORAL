@@ -2,6 +2,28 @@ import pickle
 import torch
 from torch.utils import data
 from torchvision import datasets, transforms
+from torch.utils.data import TensorDataset, DataLoader, Dataset
+
+
+class NoiseDataset(Dataset):
+    def __init__(self, size: list, num_class=50):
+        self.n = size[0]
+        self.num_class = num_class
+        self.datas = torch.randn(size=size) + 10
+        self.label = self.mkLabel()
+
+    def __len__(self):
+        return self.n
+
+    def __getitem__(self, item):
+        return self.datas[item], self.label[item]
+
+    def mkLabel(self):
+        label = []
+        for i in range(self.num_class):
+            for j in range(int(self.n/self.num_class)):
+                label.append(i)
+        return label
 
 
 def get_dataset_mean_and_std(directory):
