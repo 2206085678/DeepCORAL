@@ -9,14 +9,15 @@ class NoiseDataset(Dataset):
     def __init__(self, size: list, num_class=50):
         self.n = size[0]
         self.num_class = num_class
-        self.datas = torch.randn(size=size) + 10
+        self.datas_Guss = torch.randn(size=size) + 100
+        self.datas_one = torch.ones(size=size) * 100
         self.label = self.mkLabel()
 
     def __len__(self):
         return self.n
 
     def __getitem__(self, item):
-        return self.datas[item], self.label[item]
+        return self.datas_one[item], self.label[item]
 
     def mkLabel(self):
         label = []
